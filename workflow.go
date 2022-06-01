@@ -1,12 +1,35 @@
 package main
 
-import "go.temporal.io/sdk/workflow"
+import (
+	"time"
+
+	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
+)
 
 type Order struct {
 	Status string
 }
 
+var MainQueue = "COMMERCE_MAIN"
+
 func CommerceWorkflow(ctx workflow.Context, customerID string, productID string) (Order, error) {
+
+	retryPolicy := &temporal.RetryPolicy{
+		InitialInterval:    10 * time.Second,
+		BackoffCoefficient: 2,
+		MaximumInterval:    5 * time.Minute,
+		MaximumAttempts:    5,
+	}
+	ao := workflow.ActivityOptions{
+		ScheduleToStartTimeout: time.Minute * 180,
+		StartToCloseTimeout:    time.Minute * 5,
+		HeartbeatTimeout:       time.Minute * 5,
+		RetryPolicy:            retryPolicy,
+	}
+	ctx = workflow.WithActivityOptions(ctx, ao)
+	ctx = workflow.WithTaskQueue(ctx, MainQueue)
+
 	// Invoke inventory service and payment service simultaneously
 	payment := workflow.ExecuteActivity(ctx, PaymentActivity, customerID)
 	inv := workflow.ExecuteActivity(ctx, RemoveProductFromShelf, productID)
