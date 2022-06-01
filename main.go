@@ -22,7 +22,7 @@ func main() {
 	case "worker":
 		fmt.Println("worker")
 
-	case "server":
+	case "trigger":
 		fmt.Println("server")
 	}
 }

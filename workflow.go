@@ -15,6 +15,8 @@ func CommerceWorkflow(ctx workflow.Context, customerID string, productID string)
 
 	err := payment.Get(ctx, &paymentInfo)
 	if err != nil {
+		var putRes string
+		_ = workflow.ExecuteActivity(ctx, PutProductBackInShelf, productID).Get(ctx, &putRes)
 		return Order{}, err
 	}
 
@@ -23,8 +25,13 @@ func CommerceWorkflow(ctx workflow.Context, customerID string, productID string)
 		return Order{}, err
 	}
 
+	var dispatchRes string
+	err = workflow.ExecuteActivity(ctx, DispatchActivity, customerID, productID).Get(ctx, &dispatchRes)
+	if err != nil {
+		return Order{}, err
+	}
+
 	return Order{
 		Status: "CONFIRMED",
 	}, nil
-
 }
